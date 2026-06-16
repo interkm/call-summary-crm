@@ -28,7 +28,7 @@ st.set_page_config(
 # ── Custom CSS: Paperlogy + 베이지/주황/초록 테마 ─────────────────────────────
 st.markdown("""
 <style>
-@import url('https://cdn.jsdelivr.net/gh/webfontworld/paperlogy/Paperlogy.css');
+@import url('https://cdn.jsdelivr.net/gh/fonts-archive/Paperlogy/Paperlogy.css');
 
 html, body, [class*="css"], .stApp, .stMarkdown, .stTextArea textarea,
 .stSelectbox, .stFileUploader, .stButton > button, .stExpander,

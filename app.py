@@ -121,7 +121,7 @@ with st.sidebar:
     model_size = st.selectbox(
         "Whisper 모델",
         ["tiny", "base", "small"],
-        index=2,
+        index=0,
         help="tiny: 빠름/낮은정확도 | base: 중간 | small: 권장",
     )
     st.caption("처음 실행 시 모델 자동 다운로드.")
@@ -131,7 +131,7 @@ with st.sidebar:
     st.markdown("**🤖 요약 방법**")
     sum_method = st.radio(
         "요약 방법",
-        ["규칙 기반 (무료)", "OpenRouter API"],
+        ["OpenRouter API", "규칙 기반 (무료)"],
         label_visibility="collapsed",
     )
     or_model_label = None

@@ -17,8 +17,8 @@ data/summaries/
 # DB
 db/consultations.sqlite
 
-# Streamlit
-.streamlit/
+# Streamlit secrets only (config.toml은 커밋)
+.streamlit/secrets.toml
 
 # Whisper 모델 캐시
 *.bin

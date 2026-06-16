@@ -19,6 +19,21 @@ def init_db() -> None:
                 summary_text TEXT
             )
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS contacts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                created_at TEXT NOT NULL,
+                name TEXT DEFAULT '',
+                title TEXT DEFAULT '',
+                company TEXT DEFAULT '',
+                department TEXT DEFAULT '',
+                phone TEXT DEFAULT '',
+                mobile TEXT DEFAULT '',
+                email TEXT DEFAULT '',
+                address TEXT DEFAULT '',
+                website TEXT DEFAULT ''
+            )
+        """)
         conn.commit()
 
 
@@ -48,6 +63,40 @@ def save_consultation(
         )
         conn.commit()
         return cursor.lastrowid
+
+
+def save_contact(info: dict) -> int:
+    init_db()
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.execute(
+            """INSERT INTO contacts
+               (created_at, name, title, company, department, phone, mobile, email, address, website)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                datetime.now().isoformat(),
+                info.get("name", ""),
+                info.get("title", ""),
+                info.get("company", ""),
+                info.get("department", ""),
+                info.get("phone", ""),
+                info.get("mobile", ""),
+                info.get("email", ""),
+                info.get("address", ""),
+                info.get("website", ""),
+            ),
+        )
+        conn.commit()
+        return cursor.lastrowid
+
+
+def get_all_contacts() -> list:
+    init_db()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            "SELECT * FROM contacts ORDER BY created_at DESC"
+        ).fetchall()
+    return [dict(r) for r in rows]
 
 
 def get_all_consultations() -> list:

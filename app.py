@@ -6,7 +6,7 @@ import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from src.db import init_db, save_consultation
+from src.db import init_db, save_consultation, save_contact
 from src.storage import save_upload, save_transcript, save_summary_md, save_summary_txt
 from src.summarizer import summarize, _get_secret as sum_get_secret
 from src.prompts import OPENROUTER_MODELS, GROQ_MODELS
@@ -14,6 +14,7 @@ from src.transcriber import transcribe
 from src.calendar_utils import detect_appointment, make_google_calendar_url
 from src.telegram_utils import is_configured as tg_ok, send as tg_send, consultation_msg as tg_consultation_msg
 from src.github_store import increment_today, create_gist, _get_secret as gs_get_secret
+from src.card_ocr import extract_phone_from_filename, ocr_business_card
 
 # ── Startup ───────────────────────────────────────────────────────────────────
 init_db()
@@ -110,6 +111,8 @@ _DEFAULTS = {
     "transcript_path": None,
     "summary_md_path": None,
     "appointment": None,
+    "caller_phone": "",
+    "card_info": None,
 }
 for k, v in _DEFAULTS.items():
     if k not in st.session_state:
@@ -249,9 +252,61 @@ if uploaded is not None:
             st.session_state.transcript_path = None
             st.session_state.summary_md_path = None
             st.session_state.appointment = None
+            # 파일명에서 발신자 전화번호 추출
+            phone = extract_phone_from_filename(uploaded.name)
+            st.session_state.caller_phone = phone
             st.success(f"저장 완료: `{path}`")
         except Exception as e:
             st.error(f"파일 저장 실패: {e}")
+
+if st.session_state.caller_phone:
+    st.info(f"📞 발신자 번호 (파일명): **{st.session_state.caller_phone}**")
+
+# ── 📇 명함 스캔 ──────────────────────────────────────────────────────────────
+st.divider()
+st.header("📇 명함 스캔 (선택)")
+
+_card_groq_key = groq_key
+with st.expander("명함 사진 업로드 → 자동 연락처 추출", expanded=bool(st.session_state.card_info)):
+    if not _card_groq_key:
+        st.warning("GROQ_API_KEY 필요 — Streamlit Secrets에 추가 후 사용 가능")
+    else:
+        card_file = st.file_uploader(
+            "명함 이미지 선택 (jpg, png, webp)",
+            type=["jpg", "jpeg", "png", "webp", "heic"],
+            key="card_uploader",
+        )
+        if card_file and st.button("🔍 명함 OCR 분석", key="btn_card_ocr"):
+            with st.spinner("Groq Vision으로 명함 분석 중..."):
+                try:
+                    info = ocr_business_card(card_file.getvalue(), _card_groq_key, card_file.name)
+                    st.session_state.card_info = info
+                    st.success("명함 분석 완료!")
+                except Exception as e:
+                    st.error(f"명함 OCR 실패: {e}")
+
+    if st.session_state.card_info:
+        info = st.session_state.card_info
+        st.markdown("**추출된 연락처 정보**")
+        col_c1, col_c2 = st.columns(2)
+        with col_c1:
+            info["name"] = st.text_input("성명", value=info.get("name", ""), key="ci_name")
+            info["title"] = st.text_input("직함", value=info.get("title", ""), key="ci_title")
+            info["company"] = st.text_input("회사명", value=info.get("company", ""), key="ci_company")
+            info["department"] = st.text_input("부서", value=info.get("department", ""), key="ci_dept")
+        with col_c2:
+            info["phone"] = st.text_input("전화번호", value=info.get("phone", ""), key="ci_phone")
+            info["mobile"] = st.text_input("휴대폰", value=info.get("mobile", ""), key="ci_mobile")
+            info["email"] = st.text_input("이메일", value=info.get("email", ""), key="ci_email")
+            info["website"] = st.text_input("웹사이트", value=info.get("website", ""), key="ci_web")
+        info["address"] = st.text_input("주소", value=info.get("address", ""), key="ci_addr")
+
+        if st.button("💾 연락처 DB 저장", key="btn_save_contact"):
+            try:
+                cid = save_contact(info)
+                st.success(f"연락처 저장 완료! (ID: {cid})")
+            except Exception as e:
+                st.error(f"연락처 저장 실패: {e}")
 
 # ── 2. 음성 전사 ──────────────────────────────────────────────────────────────
 st.divider()

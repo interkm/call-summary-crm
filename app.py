@@ -8,7 +8,8 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from src.db import init_db, save_consultation
 from src.storage import save_upload, save_transcript, save_summary_md, save_summary_txt
-from src.summarizer import summarize
+from src.summarizer import summarize, _get_secret as sum_get_secret
+from src.prompts import OPENROUTER_MODELS
 from src.transcriber import transcribe
 from src.calendar_utils import detect_appointment, make_google_calendar_url
 from src.telegram_utils import is_configured as tg_ok, send as tg_send, consultation_msg as tg_consultation_msg
@@ -125,6 +126,30 @@ with st.sidebar:
     )
     st.caption("처음 실행 시 모델 자동 다운로드.")
     st.caption("GPU 없으면 CPU 자동 전환.")
+
+    st.divider()
+    st.markdown("**🤖 요약 방법**")
+    sum_method = st.radio(
+        "요약 방법",
+        ["규칙 기반 (무료)", "OpenRouter API"],
+        label_visibility="collapsed",
+    )
+    or_model_label = None
+    or_model_id = None
+    if sum_method == "OpenRouter API":
+        or_api_key = sum_get_secret("OPENROUTER_API_KEY")
+        if or_api_key:
+            st.success("API 키 연결됨 ✓")
+        else:
+            st.warning("OPENROUTER_API_KEY 미설정")
+            st.caption("secrets.toml에 추가 필요")
+        or_model_label = st.selectbox(
+            "모델 선택",
+            list(OPENROUTER_MODELS.keys()),
+            index=0,
+        )
+        or_model_id = OPENROUTER_MODELS[or_model_label]
+        st.caption(f"`{or_model_id}`")
     st.divider()
 
     # ── 텔레그램 상태 ──
@@ -180,9 +205,8 @@ uploaded = st.file_uploader(
 
 if uploaded is not None:
     ext = Path(uploaded.name).suffix.lstrip(".").lower()
-    if ext not in ALLOWED_EXT:
-        st.error(f"지원하지 않는 형식: .{ext} — 오디오 파일을 선택해주세요.")
-        uploaded = None
+    if ext and ext not in ALLOWED_EXT:
+        st.warning(f"⚠️ .{ext} 형식은 미검증 — 전사 실패 시 m4a/mp3/wav로 변환하세요. 그래도 시도합니다.")
 
 if uploaded is not None:
     try:
@@ -239,14 +263,20 @@ summary_disabled = st.session_state.transcript is None
 if summary_disabled and not transcribe_disabled:
     st.info("전사를 먼저 완료하세요.")
 
-if st.button("📝 상담요약 생성", disabled=summary_disabled, key="btn_summarize"):
-    with st.spinner("요약 생성 중..."):
+_use_api = sum_method == "OpenRouter API"
+_btn_label = f"📝 상담요약 생성 ({'🤖 ' + (or_model_label or '') if _use_api else '규칙 기반'})"
+
+if st.button(_btn_label, disabled=summary_disabled, key="btn_summarize"):
+    _spinner_msg = f"OpenRouter API 요약 중... ({or_model_id})" if _use_api else "규칙 기반 요약 생성 중..."
+    with st.spinner(_spinner_msg):
         try:
-            summary_text = summarize(st.session_state.transcript, method="rule")
+            method = "openrouter" if _use_api else "rule"
+            model = or_model_id or "meta-llama/llama-3.1-8b-instruct:free"
+            summary_text = summarize(st.session_state.transcript, method=method, model=model)
             st.session_state.summary = summary_text
             if st.session_state.appointment is None:
                 st.session_state.appointment = detect_appointment(st.session_state.transcript)
-            st.success("요약 생성 완료!")
+            st.success(f"요약 완료! ({'API: ' + (or_model_id or '') if _use_api else '규칙 기반'})")
         except Exception as e:
             st.error(f"요약 실패: {e}")
 

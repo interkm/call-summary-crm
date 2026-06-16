@@ -7,8 +7,6 @@ method="openrouter"  → OpenRouter API (OPENROUTER_API_KEY 필요)
 import re
 import os
 
-from src.prompts import OPENROUTER_SYSTEM_PROMPT
-
 
 # ── Secret helper ─────────────────────────────────────────────────────────────
 
@@ -39,6 +37,10 @@ def summarize(
 
 def _openrouter(transcript: str, model: str) -> str:
     import requests
+    try:
+        from src.prompts import OPENROUTER_SYSTEM_PROMPT
+    except ImportError:
+        from .prompts import OPENROUTER_SYSTEM_PROMPT
 
     api_key = _get_secret("OPENROUTER_API_KEY")
     if not api_key:

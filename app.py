@@ -127,6 +127,16 @@ with st.sidebar:
     st.caption("처음 실행 시 모델 자동 다운로드.")
     st.caption("GPU 없으면 CPU 자동 전환.")
 
+    # Groq API 상태
+    from src.transcriber import _get_secret as tr_get_secret
+    groq_key = tr_get_secret("GROQ_API_KEY")
+    if groq_key:
+        st.success("🎙️ Groq Whisper API 사용 중 ✓")
+        st.caption("whisper-large-v3-turbo (한국어 최고 정확도)")
+    else:
+        st.warning("🎙️ Groq 미설정 → 로컬 모델 사용")
+        st.caption("console.groq.com 에서 무료 API 키 발급")
+
     st.divider()
     st.markdown("**🤖 요약 방법**")
     sum_method = st.radio(

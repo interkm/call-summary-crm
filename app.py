@@ -9,7 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from src.db import init_db, save_consultation
 from src.storage import save_upload, save_transcript, save_summary_md, save_summary_txt
 from src.summarizer import summarize, _get_secret as sum_get_secret
-from src.prompts import OPENROUTER_MODELS
+from src.prompts import OPENROUTER_MODELS, GROQ_MODELS
 from src.transcriber import transcribe
 from src.calendar_utils import detect_appointment, make_google_calendar_url
 from src.telegram_utils import is_configured as tg_ok, send as tg_send, consultation_msg as tg_consultation_msg
@@ -139,16 +139,32 @@ with st.sidebar:
 
     st.divider()
     st.markdown("**🤖 요약 방법**")
+    _has_groq = bool(groq_key)
+    _has_or = bool(sum_get_secret("OPENROUTER_API_KEY"))
+    _default_method_idx = 0 if _has_groq else (1 if _has_or else 2)
     sum_method = st.radio(
         "요약 방법",
-        ["OpenRouter API", "규칙 기반 (무료)"],
+        ["Groq LLM 🆓 (무료, 추천)", "OpenRouter API", "규칙 기반 (무료)"],
+        index=_default_method_idx,
         label_visibility="collapsed",
     )
+    groq_model_id = None
     or_model_label = None
     or_model_id = None
-    if sum_method == "OpenRouter API":
-        or_api_key = sum_get_secret("OPENROUTER_API_KEY")
-        if or_api_key:
+    if sum_method == "Groq LLM 🆓 (무료, 추천)":
+        if _has_groq:
+            st.success("Groq API 키 연결됨 ✓")
+        else:
+            st.warning("GROQ_API_KEY 미설정")
+        groq_model_label = st.selectbox(
+            "Groq 모델",
+            list(GROQ_MODELS.keys()),
+            index=0,
+        )
+        groq_model_id = GROQ_MODELS[groq_model_label]
+        st.caption(f"`{groq_model_id}`")
+    elif sum_method == "OpenRouter API":
+        if _has_or:
             st.success("API 키 연결됨 ✓")
         else:
             st.warning("OPENROUTER_API_KEY 미설정")
@@ -273,20 +289,33 @@ summary_disabled = st.session_state.transcript is None
 if summary_disabled and not transcribe_disabled:
     st.info("전사를 먼저 완료하세요.")
 
-_use_api = sum_method == "OpenRouter API"
-_btn_label = f"📝 상담요약 생성 ({'🤖 ' + (or_model_label or '') if _use_api else '규칙 기반'})"
+if sum_method == "Groq LLM 🆓 (무료, 추천)":
+    _btn_label = f"📝 상담요약 생성 (🆓 Groq: {groq_model_id or ''})"
+elif sum_method == "OpenRouter API":
+    _btn_label = f"📝 상담요약 생성 (🤖 {or_model_label or ''})"
+else:
+    _btn_label = "📝 상담요약 생성 (규칙 기반)"
 
 if st.button(_btn_label, disabled=summary_disabled, key="btn_summarize"):
-    _spinner_msg = f"OpenRouter API 요약 중... ({or_model_id})" if _use_api else "규칙 기반 요약 생성 중..."
+    if sum_method == "Groq LLM 🆓 (무료, 추천)":
+        _spinner_msg = f"Groq LLM 요약 중... ({groq_model_id})"
+        method = "groq"
+        model = groq_model_id or "llama-3.3-70b-versatile"
+    elif sum_method == "OpenRouter API":
+        _spinner_msg = f"OpenRouter API 요약 중... ({or_model_id})"
+        method = "openrouter"
+        model = or_model_id or "meta-llama/llama-3.1-8b-instruct:free"
+    else:
+        _spinner_msg = "규칙 기반 요약 생성 중..."
+        method = "rule"
+        model = ""
     with st.spinner(_spinner_msg):
         try:
-            method = "openrouter" if _use_api else "rule"
-            model = or_model_id or "meta-llama/llama-3.1-8b-instruct:free"
             summary_text = summarize(st.session_state.transcript, method=method, model=model)
             st.session_state.summary = summary_text
             if st.session_state.appointment is None:
                 st.session_state.appointment = detect_appointment(st.session_state.transcript)
-            st.success(f"요약 완료! ({'API: ' + (or_model_id or '') if _use_api else '규칙 기반'})")
+            st.success(f"요약 완료! ({method}: {model})")
         except Exception as e:
             st.error(f"요약 실패: {e}")
 

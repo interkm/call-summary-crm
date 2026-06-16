@@ -26,11 +26,50 @@ def _get_secret(key: str) -> str:
 def summarize(
     transcript: str,
     method: str = "rule",
-    model: str = "meta-llama/llama-3.1-8b-instruct:free",
+    model: str = "llama-3.3-70b-versatile",
 ) -> str:
+    if method == "groq":
+        return _groq_llm(transcript, model)
     if method == "openrouter":
         return _openrouter(transcript, model)
     return _rule_based(transcript)
+
+
+# ── Groq LLM (무료) ──────────────────────────────────────────────────────────
+
+def _groq_llm(transcript: str, model: str) -> str:
+    import requests
+    try:
+        from src.prompts import OPENROUTER_SYSTEM_PROMPT
+    except ImportError:
+        from .prompts import OPENROUTER_SYSTEM_PROMPT
+
+    api_key = _get_secret("GROQ_API_KEY")
+    if not api_key:
+        raise ValueError("GROQ_API_KEY가 설정되지 않았습니다. Streamlit Secrets에 추가하세요.")
+
+    resp = requests.post(
+        "https://api.groq.com/openai/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": model,
+            "messages": [
+                {"role": "system", "content": OPENROUTER_SYSTEM_PROMPT},
+                {"role": "user", "content": f"[통화 전사 텍스트]\n\n{transcript}"},
+            ],
+            "temperature": 0.3,
+            "max_tokens": 2000,
+        },
+        timeout=60,
+    )
+
+    if not resp.ok:
+        raise RuntimeError(f"Groq LLM 오류 {resp.status_code}: {resp.text[:300]}")
+
+    return resp.json()["choices"][0]["message"]["content"].strip()
 
 
 # ── OpenRouter API ────────────────────────────────────────────────────────────

@@ -50,6 +50,13 @@ OPENROUTER_SYSTEM_PROMPT = """\
 - (콘텐츠 아이디어)
 """
 
+# Groq LLM 모델 목록 (무료, 빠름)
+GROQ_MODELS = {
+    "🆓 Llama 3.3 70B (무료, 추천)": "llama-3.3-70b-versatile",
+    "🆓 Llama 3.1 8B (무료, 빠름)": "llama-3.1-8b-instant",
+    "🆓 Gemma 2 9B (무료)": "gemma2-9b-it",
+}
+
 # OpenRouter 모델 목록 (label → model_id)
 OPENROUTER_MODELS = {
     "🆓 Llama 3.1 8B (무료)": "meta-llama/llama-3.1-8b-instruct:free",

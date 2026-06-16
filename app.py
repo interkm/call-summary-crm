@@ -21,27 +21,25 @@ init_db()
 
 st.set_page_config(
     page_title="통화녹음 상담요약기",
-    page_icon="📞",
+    page_icon=None,
     layout="wide",
 )
 
-# ── Custom CSS: GMarket Sans + 베이지/주황/초록 테마 ──────────────────────────
+# ── Custom CSS: Paperlogy + 베이지/주황/초록 테마 ─────────────────────────────
 st.markdown("""
 <style>
-@import url('https://cdn.jsdelivr.net/gh/webfontworld/gmarket/GmarketSans.css');
+@import url('https://cdn.jsdelivr.net/gh/webfontworld/paperlogy/Paperlogy.css');
 
 html, body, [class*="css"], .stApp, .stMarkdown, .stTextArea textarea,
 .stSelectbox, .stFileUploader, .stButton > button, .stExpander,
 .stSidebar, h1, h2, h3, h4, p, label, span, div {
-    font-family: 'GmarketSans', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif !important;
+    font-family: 'Paperlogy', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif !important;
 }
 
-/* 헤더 */
 h1 { color: #E8640A !important; font-weight: 700 !important; }
 h2 { color: #C8530A !important; font-weight: 500 !important; }
 h3 { color: #2E7D32 !important; }
 
-/* 기본 버튼 → 주황 */
 .stButton > button {
     background-color: #E8640A !important;
     color: #FFFFFF !important;
@@ -55,7 +53,6 @@ h3 { color: #2E7D32 !important; }
     background-color: #C8530A !important;
     color: #FFFFFF !important;
 }
-/* secondary 버튼 (삭제 등) → 빨강 계열 */
 .stButton > button[kind="secondary"] {
     background-color: #B71C1C !important;
 }
@@ -63,7 +60,6 @@ h3 { color: #2E7D32 !important; }
     background-color: #7F1010 !important;
 }
 
-/* 캘린더 링크 버튼 → 초록 */
 .cal-section .stLinkButton a {
     background-color: #2E7D32 !important;
     color: white !important;
@@ -74,21 +70,17 @@ h3 { color: #2E7D32 !important; }
     background-color: #1B5E20 !important;
 }
 
-/* 구분선 */
 hr { border-color: #D4C4A8 !important; }
 
-/* 사이드바 */
 section[data-testid="stSidebar"] {
     background-color: #EDE4D3 !important;
 }
 
-/* 인풋 포커스 → 주황 테두리 */
 input:focus, textarea:focus {
     border-color: #E8640A !important;
     box-shadow: 0 0 0 2px rgba(232,100,10,0.2) !important;
 }
 
-/* 일정 감지 박스 */
 .calendar-card {
     background: #E8F5E9;
     border-left: 4px solid #2E7D32;
@@ -99,7 +91,7 @@ input:focus, textarea:focus {
 </style>
 """, unsafe_allow_html=True)
 
-st.title("📞 통화녹음 상담요약기")
+st.title("통화녹음 상담요약기")
 st.caption("통화녹음 파일을 올리면 전사하고 전기안전관리 상담기록으로 요약합니다.")
 
 # ── Session state ─────────────────────────────────────────────────────────────
@@ -120,7 +112,7 @@ for k, v in _DEFAULTS.items():
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.header("⚙️ 설정")
+    st.header("설정")
     model_size = st.selectbox(
         "Whisper 모델",
         ["tiny", "base", "small"],
@@ -130,31 +122,30 @@ with st.sidebar:
     st.caption("처음 실행 시 모델 자동 다운로드.")
     st.caption("GPU 없으면 CPU 자동 전환.")
 
-    # Groq API 상태
     from src.transcriber import _get_secret as tr_get_secret
     groq_key = tr_get_secret("GROQ_API_KEY")
     if groq_key:
-        st.success("🎙️ Groq Whisper API 사용 중 ✓")
+        st.success("Groq Whisper API 사용 중 ✓")
         st.caption("whisper-large-v3-turbo (한국어 최고 정확도)")
     else:
-        st.warning("🎙️ Groq 미설정 → 로컬 모델 사용")
+        st.warning("Groq 미설정 → 로컬 모델 사용")
         st.caption("console.groq.com 에서 무료 API 키 발급")
 
     st.divider()
-    st.markdown("**🤖 요약 방법**")
+    st.markdown("**요약 방법**")
     _has_groq = bool(groq_key)
     _has_or = bool(sum_get_secret("OPENROUTER_API_KEY"))
     _default_method_idx = 0 if _has_groq else (1 if _has_or else 2)
     sum_method = st.radio(
         "요약 방법",
-        ["Groq LLM 🆓 (무료, 추천)", "OpenRouter API", "규칙 기반 (무료)"],
+        ["Groq LLM (무료, 추천)", "OpenRouter API", "규칙 기반 (무료)"],
         index=_default_method_idx,
         label_visibility="collapsed",
     )
     groq_model_id = None
     or_model_label = None
     or_model_id = None
-    if sum_method == "Groq LLM 🆓 (무료, 추천)":
+    if sum_method == "Groq LLM (무료, 추천)":
         if _has_groq:
             st.success("Groq API 키 연결됨 ✓")
         else:
@@ -181,8 +172,7 @@ with st.sidebar:
         st.caption(f"`{or_model_id}`")
     st.divider()
 
-    # ── 텔레그램 상태 ──
-    st.markdown("**📱 텔레그램**")
+    st.markdown("**텔레그램**")
     if tg_ok():
         st.success("연결됨 ✓")
     else:
@@ -198,18 +188,17 @@ with st.sidebar:
 
     st.divider()
 
-    # ── Gist 설정 ──
-    st.markdown("**⏰ 스케줄 다이제스트**")
+    st.markdown("**스케줄 다이제스트**")
     gist_id = gs_get_secret("GIST_ID")
     if gist_id:
         st.success("Gist 연결됨 ✓")
     else:
         st.info("Gist 미설정 (선택)")
         if gs_get_secret("GITHUB_TOKEN"):
-            if st.button("🆕 Gist 자동 생성", key="btn_create_gist"):
+            if st.button("Gist 자동 생성", key="btn_create_gist"):
                 new_id = create_gist()
                 if new_id:
-                    st.success(f"Gist 생성 완료!")
+                    st.success("Gist 생성 완료!")
                     st.code(f"GIST_ID = \"{new_id}\"")
                     st.caption("위 값을 secrets.toml 및 GitHub Actions Secrets에 추가하세요.")
                 else:
@@ -222,7 +211,7 @@ with st.sidebar:
     st.code("data/uploads/\ndata/transcripts/\ndata/summaries/\ndb/consultations.sqlite")
 
 # ── 1. 파일 업로드 ─────────────────────────────────────────────────────────────
-st.header("1️⃣ 녹음파일 업로드")
+st.header("1. 녹음파일 업로드")
 
 ALLOWED_EXT = {"m4a", "mp3", "wav", "mp4", "aac", "ogg", "amr", "3gp", "wma", "flac"}
 
@@ -235,14 +224,14 @@ uploaded = st.file_uploader(
 if uploaded is not None:
     ext = Path(uploaded.name).suffix.lstrip(".").lower()
     if ext and ext not in ALLOWED_EXT:
-        st.warning(f"⚠️ .{ext} 형식은 미검증 — 전사 실패 시 m4a/mp3/wav로 변환하세요. 그래도 시도합니다.")
+        st.warning(f".{ext} 형식은 미검증 — 전사 실패 시 m4a/mp3/wav로 변환하세요. 그래도 시도합니다.")
 
 if uploaded is not None:
     try:
         st.audio(uploaded)
     except Exception:
         st.info(f"미리듣기 미지원 형식 ({Path(uploaded.name).suffix}) — 업로드는 가능합니다.")
-    if st.button("💾 파일 저장", key="btn_save_upload"):
+    if st.button("파일 저장", key="btn_save_upload"):
         try:
             path = save_upload(uploaded.getvalue(), uploaded.name)
             st.session_state.upload_path = path
@@ -252,7 +241,6 @@ if uploaded is not None:
             st.session_state.transcript_path = None
             st.session_state.summary_md_path = None
             st.session_state.appointment = None
-            # 파일명에서 발신자 전화번호 추출
             phone = extract_phone_from_filename(uploaded.name)
             st.session_state.caller_phone = phone
             st.success(f"저장 완료: `{path}`")
@@ -260,11 +248,11 @@ if uploaded is not None:
             st.error(f"파일 저장 실패: {e}")
 
 if st.session_state.caller_phone:
-    st.info(f"📞 발신자 번호 (파일명): **{st.session_state.caller_phone}**")
+    st.info(f"발신자 번호 (파일명): **{st.session_state.caller_phone}**")
 
-# ── 📇 명함 스캔 ──────────────────────────────────────────────────────────────
+# ── 명함 스캔 ─────────────────────────────────────────────────────────────────
 st.divider()
-st.header("📇 명함 스캔 (선택)")
+st.header("명함 스캔 (선택)")
 
 _card_groq_key = groq_key
 with st.expander("명함 사진 업로드 → 자동 연락처 추출", expanded=bool(st.session_state.card_info)):
@@ -276,7 +264,7 @@ with st.expander("명함 사진 업로드 → 자동 연락처 추출", expanded
             type=["jpg", "jpeg", "png", "webp", "heic"],
             key="card_uploader",
         )
-        if card_file and st.button("🔍 명함 OCR 분석", key="btn_card_ocr"):
+        if card_file and st.button("명함 OCR 분석", key="btn_card_ocr"):
             with st.spinner("Groq Vision으로 명함 분석 중..."):
                 try:
                     info = ocr_business_card(card_file.getvalue(), _card_groq_key, card_file.name)
@@ -301,7 +289,7 @@ with st.expander("명함 사진 업로드 → 자동 연락처 추출", expanded
             info["website"] = st.text_input("웹사이트", value=info.get("website", ""), key="ci_web")
         info["address"] = st.text_input("주소", value=info.get("address", ""), key="ci_addr")
 
-        if st.button("💾 연락처 DB 저장", key="btn_save_contact"):
+        if st.button("연락처 DB 저장", key="btn_save_contact"):
             try:
                 cid = save_contact(info)
                 st.success(f"연락처 저장 완료! (ID: {cid})")
@@ -310,13 +298,13 @@ with st.expander("명함 사진 업로드 → 자동 연락처 추출", expanded
 
 # ── 2. 음성 전사 ──────────────────────────────────────────────────────────────
 st.divider()
-st.header("2️⃣ 음성 전사")
+st.header("2. 음성 전사")
 
 transcribe_disabled = st.session_state.upload_path is None
 if transcribe_disabled:
-    st.info("먼저 녹음파일을 업로드하고 💾 파일 저장을 눌러주세요.")
+    st.info("먼저 녹음파일을 업로드하고 파일 저장을 눌러주세요.")
 
-if st.button("🎙️ 전사 시작", disabled=transcribe_disabled, key="btn_transcribe"):
+if st.button("전사 시작", disabled=transcribe_disabled, key="btn_transcribe"):
     with st.spinner(f"전사 중... 모델: {model_size} (GPU 없으면 CPU 자동 전환)"):
         try:
             text = transcribe(Path(st.session_state.upload_path), model_size)
@@ -326,7 +314,6 @@ if st.button("🎙️ 전사 시작", disabled=transcribe_disabled, key="btn_tra
                 st.session_state.transcript = text
                 t_path = save_transcript(text, st.session_state.stem)
                 st.session_state.transcript_path = t_path
-                # 일정 감지 (전사 직후 바로)
                 st.session_state.appointment = detect_appointment(text)
                 st.success(f"전사 완료! ({len(text)}자) — 저장: `{t_path}`")
         except Exception as e:
@@ -338,21 +325,21 @@ if st.session_state.transcript:
 
 # ── 3. 상담요약 생성 ───────────────────────────────────────────────────────────
 st.divider()
-st.header("3️⃣ 상담요약 생성")
+st.header("3. 상담요약 생성")
 
 summary_disabled = st.session_state.transcript is None
 if summary_disabled and not transcribe_disabled:
     st.info("전사를 먼저 완료하세요.")
 
-if sum_method == "Groq LLM 🆓 (무료, 추천)":
-    _btn_label = f"📝 상담요약 생성 (🆓 Groq: {groq_model_id or ''})"
+if sum_method == "Groq LLM (무료, 추천)":
+    _btn_label = f"상담요약 생성 (Groq: {groq_model_id or ''})"
 elif sum_method == "OpenRouter API":
-    _btn_label = f"📝 상담요약 생성 (🤖 {or_model_label or ''})"
+    _btn_label = f"상담요약 생성 ({or_model_label or ''})"
 else:
-    _btn_label = "📝 상담요약 생성 (규칙 기반)"
+    _btn_label = "상담요약 생성 (규칙 기반)"
 
 if st.button(_btn_label, disabled=summary_disabled, key="btn_summarize"):
-    if sum_method == "Groq LLM 🆓 (무료, 추천)":
+    if sum_method == "Groq LLM (무료, 추천)":
         _spinner_msg = f"Groq LLM 요약 중... ({groq_model_id})"
         method = "groq"
         model = groq_model_id or "llama-3.3-70b-versatile"
@@ -381,11 +368,11 @@ if st.session_state.summary:
 # ── 4. 결과 저장 ──────────────────────────────────────────────────────────────
 if st.session_state.summary:
     st.divider()
-    st.header("4️⃣ 결과 저장")
+    st.header("4. 결과 저장")
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        if st.button("💾 Markdown 저장", key="btn_md"):
+        if st.button("Markdown 저장", key="btn_md"):
             try:
                 p = save_summary_md(st.session_state.summary, st.session_state.stem)
                 st.session_state.summary_md_path = p
@@ -394,7 +381,7 @@ if st.session_state.summary:
                 st.error(f"저장 실패: {e}")
 
     with col2:
-        if st.button("📄 TXT 저장", key="btn_txt"):
+        if st.button("TXT 저장", key="btn_txt"):
             try:
                 p = save_summary_txt(st.session_state.summary, st.session_state.stem)
                 st.success(f"저장: `{p}`")
@@ -402,7 +389,7 @@ if st.session_state.summary:
                 st.error(f"저장 실패: {e}")
 
     with col3:
-        if st.button("🗄️ DB 저장 + 텔레그램 전송", key="btn_db"):
+        if st.button("DB 저장 + 텔레그램 전송", key="btn_db"):
             try:
                 t_path = st.session_state.transcript_path or save_transcript(
                     st.session_state.transcript, st.session_state.stem
@@ -420,18 +407,16 @@ if st.session_state.summary:
                 )
                 st.success(f"DB 저장 완료! (ID: {row_id})")
 
-                # 텔레그램 즉시 전송
                 if tg_ok():
                     msg = tg_consultation_msg(fname, st.session_state.summary)
                     ok = tg_send(msg)
                     if ok:
-                        st.success("📱 텔레그램 전송 완료!")
+                        st.success("텔레그램 전송 완료!")
                     else:
                         st.warning("텔레그램 전송 실패. 봇 토큰/Chat ID 확인.")
                 else:
                     st.info("텔레그램 미설정 — 사이드바에서 설정하세요.")
 
-                # Gist 카운터 +1
                 try:
                     cnt = increment_today()
                     if cnt:
@@ -446,11 +431,11 @@ if st.session_state.summary:
 if st.session_state.transcript:
     appt = st.session_state.appointment or {}
     st.divider()
-    st.header("5️⃣ 구글 캘린더 일정 등록")
+    st.header("5. 구글 캘린더 일정 등록")
 
     if appt.get("detected"):
         st.markdown(
-            '<div class="calendar-card">📅 <b>통화에서 일정 약속이 감지되었습니다.</b> 아래 내용을 확인하고 등록하세요.</div>',
+            '<div class="calendar-card"><b>통화에서 일정 약속이 감지되었습니다.</b> 아래 내용을 확인하고 등록하세요.</div>',
             unsafe_allow_html=True,
         )
     else:
@@ -494,7 +479,7 @@ if st.session_state.transcript:
             height=80,
         )
 
-        submitted = st.form_submit_button("📅 구글 캘린더 열기", use_container_width=True)
+        submitted = st.form_submit_button("구글 캘린더 열기", use_container_width=True)
 
     if submitted:
         cal_url = make_google_calendar_url(
@@ -507,20 +492,20 @@ if st.session_state.transcript:
         st.markdown(
             f'<div class="cal-section"><a href="{cal_url}" target="_blank" style="'
             f'display:inline-block;background:#2E7D32;color:white;padding:0.6rem 1.4rem;'
-            f'border-radius:10px;text-decoration:none;font-family:GmarketSans,sans-serif;'
-            f'font-weight:500;font-size:1rem;">📅 구글 캘린더에서 일정 추가하기 →</a></div>',
+            f'border-radius:10px;text-decoration:none;font-family:Paperlogy,sans-serif;'
+            f'font-weight:500;font-size:1rem;">구글 캘린더에서 일정 추가하기 →</a></div>',
             unsafe_allow_html=True,
         )
 
 # ── 6. 원본파일 관리 ──────────────────────────────────────────────────────────
 st.divider()
-st.header("6️⃣ 원본파일 관리")
+st.header("6. 원본파일 관리")
 
 if st.session_state.upload_path:
     upload_path = Path(st.session_state.upload_path)
     if upload_path.exists():
         st.warning(f"원본파일 위치: `{upload_path}`")
-        if st.button("🗑️ 원본파일 삭제", type="secondary", key="btn_delete"):
+        if st.button("원본파일 삭제", type="secondary", key="btn_delete"):
             try:
                 upload_path.unlink()
                 st.session_state.upload_path = None

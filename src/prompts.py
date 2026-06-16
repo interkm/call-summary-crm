@@ -52,16 +52,16 @@ OPENROUTER_SYSTEM_PROMPT = """\
 
 # Groq LLM 모델 목록 (무료, 빠름)
 GROQ_MODELS = {
-    "🆓 Llama 3.3 70B (무료, 추천)": "llama-3.3-70b-versatile",
-    "🆓 Llama 3.1 8B (무료, 빠름)": "llama-3.1-8b-instant",
-    "🆓 Gemma 2 9B (무료)": "gemma2-9b-it",
+    "Llama 3.3 70B (무료, 추천)": "llama-3.3-70b-versatile",
+    "Llama 3.1 8B (무료, 빠름)": "llama-3.1-8b-instant",
+    "Gemma 2 9B (무료)": "gemma2-9b-it",
 }
 
 # OpenRouter 모델 목록 (label → model_id)
 OPENROUTER_MODELS = {
-    "🆓 Llama 3.1 8B (무료)": "meta-llama/llama-3.1-8b-instruct:free",
-    "🆓 DeepSeek R1 (무료)": "deepseek/deepseek-r1:free",
-    "🆓 Gemma 3 12B (무료)": "google/gemma-3-12b-it:free",
-    "💰 DeepSeek V3 (최저가 $0.14)": "deepseek/deepseek-chat",
-    "💰 GPT-4o Mini": "openai/gpt-4o-mini",
+    "Llama 3.1 8B (무료)": "meta-llama/llama-3.1-8b-instruct:free",
+    "DeepSeek R1 (무료)": "deepseek/deepseek-r1:free",
+    "Gemma 3 12B (무료)": "google/gemma-3-12b-it:free",
+    "DeepSeek V3 (최저가 $0.14)": "deepseek/deepseek-chat",
+    "GPT-4o Mini": "openai/gpt-4o-mini",
 }

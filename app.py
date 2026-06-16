@@ -479,10 +479,22 @@ if st.session_state.transcript:
                     pass
             event_time = st.time_input("시간 (없으면 종일)", value=default_time)
 
+        def _plain(text: str) -> str:
+            import re as _re
+            text = _re.sub(r'^#{1,6}\s*', '', text, flags=_re.MULTILINE)
+            text = _re.sub(r'\*\*(.+?)\*\*', r'\1', text)
+            text = _re.sub(r'\*(.+?)\*', r'\1', text)
+            text = _re.sub(r'^[-*]\s*\[.\]\s*', '', text, flags=_re.MULTILINE)
+            text = _re.sub(r'^[-*]\s+', '', text, flags=_re.MULTILINE)
+            text = _re.sub(r'^>\s*', '', text, flags=_re.MULTILINE)
+            text = _re.sub(r'`+', '', text)
+            text = _re.sub(r'\n{3,}', '\n\n', text)
+            return text.strip()
+
         event_details = st.text_area(
             "메모",
-            value=(st.session_state.summary or "")[:500],
-            height=80,
+            value=_plain(st.session_state.summary or "")[:800],
+            height=250,
         )
 
         submitted = st.form_submit_button("구글 캘린더 열기", use_container_width=True)

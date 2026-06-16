@@ -30,9 +30,15 @@ st.markdown("""
 <style>
 @import url('https://cdn.jsdelivr.net/gh/fonts-archive/Paperlogy/Paperlogy.css');
 
-html, body, [class*="css"], .stApp, .stMarkdown, .stTextArea textarea,
-.stSelectbox, .stFileUploader, .stButton > button, .stExpander,
-.stSidebar, h1, h2, h3, h4, p, label, span, div {
+html, body, .stApp,
+h1, h2, h3, h4, h5, h6,
+p, label, caption,
+.stMarkdown, .stMarkdown p, .stMarkdown li,
+.stTextArea textarea, .stTextInput input,
+.stSelectbox label, .stRadio label,
+.stButton > button,
+.stSidebar .stMarkdown,
+.stExpander summary {
     font-family: 'Paperlogy', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif !important;
 }
 

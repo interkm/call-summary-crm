@@ -124,8 +124,10 @@ _FACILITIES = {
     "빌딩": "빌딩", "건물": "건물", "병원": "병원", "학교": "학교",
     "호텔": "호텔", "마트": "마트", "주유소": "주유소", "사업장": "사업장", "현장": "현장",
 }
-_CAP_RE = re.compile(r"(\d[\d,]*)\s*(kw|kva|킬로와트|킬로볼트)", re.IGNORECASE)
-_TRANS_RE = re.compile(r"변압기.{0,15}?(\d[\d,]*)\s*(kva|kw)", re.IGNORECASE)
+# 수전용량 = 변압기 kVA 용량
+_TRANS_RE = re.compile(r"(변압기|수전).{0,15}?(\d[\d,]*)\s*(kva|킬로볼트암페어)", re.IGNORECASE)
+# 계약전력 = 한전 계약 kW
+_CONTRACT_RE = re.compile(r"계약(전력|용량|전기).{0,10}?(\d[\d,]*)\s*(kw|킬로와트)", re.IGNORECASE)
 _GEN_KWS = ["비상발전기", "발전기", "비상전원"]
 _SOLAR_KWS = ["태양광", "솔라", "ess", "ESS"]
 _PROB_KWS = ["문제", "고장", "오류", "경보", "트립", "정전", "누전", "이상", "불량", "점검"]
@@ -141,10 +143,10 @@ def _extract(text, keywords, limit=3):
 def _rule_based(transcript: str) -> str:
     region = next((r for r in _REGIONS if r in transcript), "미확인")
     facility = next((v for k, v in _FACILITIES.items() if k in transcript), "미확인")
-    m = _CAP_RE.search(transcript)
-    capacity = f"{m.group(1)} {m.group(2).upper()}" if m else "미확인"
-    m2 = _TRANS_RE.search(transcript)
-    transformer = f"{m2.group(1)} {m2.group(2).upper()}" if m2 else "미확인"
+    mt = _TRANS_RE.search(transcript)
+    transformer = f"{mt.group(2)} {mt.group(3).upper()}" if mt else "미확인"
+    mc = _CONTRACT_RE.search(transcript)
+    contract_kw = f"{mc.group(2)} {mc.group(3).upper()}" if mc else "미확인"
     gen = "있음" if any(k in transcript for k in _GEN_KWS) else "미확인"
     solar = "있음" if any(k in transcript for k in _SOLAR_KWS) else "미확인"
     problems = _extract(transcript, _PROB_KWS)
@@ -161,15 +163,16 @@ def _rule_based(transcript: str) -> str:
 ## 현장 정보
 - **지역**: {region}
 - **시설유형**: {facility}
-- **수전용량**: {capacity}
-- **변압기 용량**: {transformer}
+- **수전용량 (변압기 kVA)**: {transformer}
+- **계약전력 (한전 계약 kW)**: {contract_kw}
 - **비상발전기**: {gen}
 - **태양광**: {solar}
 - **현재 문제**:
   - {problems}
 
 ## 견적 산정에 필요한 추가 질문
-- [ ] 수전용량 확인 (변압기 뱅크 수 포함)
+- [ ] 수전용량 확인 (변압기 kVA 및 뱅크 수)
+- [ ] 계약전력 확인 (한전 계약 kW)
 - [ ] 설치 연도 및 설비 노후도
 - [ ] 현재 전기안전관리자 유무
 - [ ] 계약 형태 (위탁 / 선임 대행)

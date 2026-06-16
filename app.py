@@ -20,7 +20,7 @@ from src.card_ocr import extract_phone_from_filename, ocr_business_card
 init_db()
 
 st.set_page_config(
-    page_title="통화녹음 상담요약기",
+    page_title="음성상담 정리 Program",
     page_icon=None,
     layout="wide",
 )
@@ -36,9 +36,9 @@ html, body, [class*="css"], .stApp, .stMarkdown, .stTextArea textarea,
     font-family: 'Paperlogy', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif !important;
 }
 
-h1 { color: #4CAF50 !important; font-weight: 700 !important; }
-h2 { color: #388E3C !important; font-weight: 500 !important; }
-h3 { color: #2E7D32 !important; }
+h1 { color: #0D47A1 !important; font-weight: 700 !important; }
+h2 { color: #1565C0 !important; font-weight: 500 !important; }
+h3 { color: #1976D2 !important; }
 
 .stButton > button {
     background-color: #E8640A !important;
@@ -91,7 +91,7 @@ input:focus, textarea:focus {
 </style>
 """, unsafe_allow_html=True)
 
-st.title("통화녹음 상담요약기")
+st.title("음성상담 정리 Program")
 st.caption("통화녹음 파일을 올리면 전사하고 전기안전관리 상담기록으로 요약합니다.")
 
 # ── Session state ─────────────────────────────────────────────────────────────

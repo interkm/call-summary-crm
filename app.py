@@ -53,14 +53,25 @@ with st.sidebar:
 # ── 1. 파일 업로드 ─────────────────────────────────────────────────────────────
 st.header("1️⃣ 녹음파일 업로드")
 
+ALLOWED_EXT = {"m4a", "mp3", "wav", "mp4", "aac", "ogg", "amr", "3gp", "wma", "flac"}
+
 uploaded = st.file_uploader(
-    "m4a, mp3, wav 파일 선택",
-    type=["m4a", "mp3", "wav"],
-    help="통화녹음 파일을 드래그하거나 클릭하여 선택하세요.",
+    "통화녹음 파일 선택 (m4a, mp3, wav, amr 등)",
+    type=None,  # 모바일 호환성: 브라우저 필터 제거, 수동 검증
+    help="m4a · mp3 · wav · amr · 3gp · aac · ogg 지원. 모바일에서 파일 앱 또는 갤러리에서 선택하세요.",
 )
 
 if uploaded is not None:
-    st.audio(uploaded)
+    ext = Path(uploaded.name).suffix.lstrip(".").lower()
+    if ext not in ALLOWED_EXT:
+        st.error(f"지원하지 않는 형식: .{ext} — 오디오 파일을 선택해주세요.")
+        uploaded = None
+
+if uploaded is not None:
+    try:
+        st.audio(uploaded)
+    except Exception:
+        st.info(f"미리듣기 미지원 형식 ({Path(uploaded.name).suffix}) — 업로드는 가능합니다.")
     if st.button("💾 파일 저장", key="btn_save_upload"):
         try:
             path = save_upload(uploaded.getvalue(), uploaded.name)

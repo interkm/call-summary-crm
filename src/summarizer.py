@@ -51,7 +51,7 @@ def _openrouter(transcript: str, model: str) -> str:
         headers={
             "Authorization": f"Bearer {api_key}",
             "HTTP-Referer": "https://call-summary-crm.streamlit.app",
-            "X-Title": "전기안전관리 상담요약기",
+            "X-Title": "Call Summary CRM",
             "Content-Type": "application/json",
         },
         json={

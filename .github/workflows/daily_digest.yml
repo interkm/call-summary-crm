@@ -1,0 +1,31 @@
+name: Daily Consultation Digest
+
+on:
+  schedule:
+    - cron: '0 21 * * *'   # 🌅 06:00 KST
+    - cron: '0 2 * * *'    # 🍱 11:00 KST
+    - cron: '0 6 * * *'    # ☀️ 15:00 KST
+    - cron: '0 9 * * *'    # 🌆 18:00 KST
+    - cron: '0 13 * * *'   # 🌙 22:00 KST
+  workflow_dispatch:         # 수동 실행 (테스트용)
+
+jobs:
+  send_digest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Send Telegram Digest
+        run: python scripts/digest.py
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GITHUB_TOKEN: ${{ secrets.GIST_TOKEN }}
+          GIST_ID: ${{ secrets.GIST_ID }}

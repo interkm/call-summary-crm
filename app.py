@@ -11,6 +11,8 @@ from src.storage import save_upload, save_transcript, save_summary_md, save_summ
 from src.summarizer import summarize
 from src.transcriber import transcribe
 from src.calendar_utils import detect_appointment, make_google_calendar_url
+from src.telegram_utils import is_configured as tg_ok, send as tg_send, consultation_msg as tg_consultation_msg
+from src.github_store import increment_today, create_gist, _get_secret as gs_get_secret
 
 # ── Startup ───────────────────────────────────────────────────────────────────
 init_db()
@@ -123,6 +125,44 @@ with st.sidebar:
     )
     st.caption("처음 실행 시 모델 자동 다운로드.")
     st.caption("GPU 없으면 CPU 자동 전환.")
+    st.divider()
+
+    # ── 텔레그램 상태 ──
+    st.markdown("**📱 텔레그램**")
+    if tg_ok():
+        st.success("연결됨 ✓")
+    else:
+        st.warning("미설정")
+        st.caption("secrets.toml에 TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID 추가 필요")
+        with st.expander("설정 방법"):
+            st.markdown("""
+1. [@BotFather](https://t.me/BotFather) → `/newbot` → 토큰 발급
+2. 봇에 메시지 1개 전송
+3. `https://api.telegram.org/bot<TOKEN>/getUpdates` 접속 → `chat.id` 확인
+4. `.streamlit/secrets.toml` 에 입력
+            """)
+
+    st.divider()
+
+    # ── Gist 설정 ──
+    st.markdown("**⏰ 스케줄 다이제스트**")
+    gist_id = gs_get_secret("GIST_ID")
+    if gist_id:
+        st.success("Gist 연결됨 ✓")
+    else:
+        st.info("Gist 미설정 (선택)")
+        if gs_get_secret("GITHUB_TOKEN"):
+            if st.button("🆕 Gist 자동 생성", key="btn_create_gist"):
+                new_id = create_gist()
+                if new_id:
+                    st.success(f"Gist 생성 완료!")
+                    st.code(f"GIST_ID = \"{new_id}\"")
+                    st.caption("위 값을 secrets.toml 및 GitHub Actions Secrets에 추가하세요.")
+                else:
+                    st.error("Gist 생성 실패. GITHUB_TOKEN 권한(gist)을 확인하세요.")
+        else:
+            st.caption("GITHUB_TOKEN 추가 후 Gist 생성 가능")
+
     st.divider()
     st.markdown("**저장 경로**")
     st.code("data/uploads/\ndata/transcripts/\ndata/summaries/\ndb/consultations.sqlite")
@@ -238,7 +278,7 @@ if st.session_state.summary:
                 st.error(f"저장 실패: {e}")
 
     with col3:
-        if st.button("🗄️ DB 저장", key="btn_db"):
+        if st.button("🗄️ DB 저장 + 텔레그램 전송", key="btn_db"):
             try:
                 t_path = st.session_state.transcript_path or save_transcript(
                     st.session_state.transcript, st.session_state.stem
@@ -246,15 +286,35 @@ if st.session_state.summary:
                 s_path = st.session_state.summary_md_path or save_summary_md(
                     st.session_state.summary, st.session_state.stem
                 )
+                fname = Path(st.session_state.upload_path).name if st.session_state.upload_path else "unknown"
                 row_id = save_consultation(
-                    original_filename=Path(st.session_state.upload_path).name
-                    if st.session_state.upload_path else "unknown",
+                    original_filename=fname,
                     transcript_path=str(t_path),
                     summary_path=str(s_path),
                     transcript_text=st.session_state.transcript,
                     summary_text=st.session_state.summary,
                 )
                 st.success(f"DB 저장 완료! (ID: {row_id})")
+
+                # 텔레그램 즉시 전송
+                if tg_ok():
+                    msg = tg_consultation_msg(fname, st.session_state.summary)
+                    ok = tg_send(msg)
+                    if ok:
+                        st.success("📱 텔레그램 전송 완료!")
+                    else:
+                        st.warning("텔레그램 전송 실패. 봇 토큰/Chat ID 확인.")
+                else:
+                    st.info("텔레그램 미설정 — 사이드바에서 설정하세요.")
+
+                # Gist 카운터 +1
+                try:
+                    cnt = increment_today()
+                    if cnt:
+                        st.caption(f"오늘 누적 상담: {cnt}건")
+                except Exception:
+                    pass
+
             except Exception as e:
                 st.error(f"DB 저장 실패: {e}")
 

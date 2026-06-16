@@ -36,8 +36,8 @@ html, body, [class*="css"], .stApp, .stMarkdown, .stTextArea textarea,
     font-family: 'Paperlogy', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif !important;
 }
 
-h1 { color: #E8640A !important; font-weight: 700 !important; }
-h2 { color: #C8530A !important; font-weight: 500 !important; }
+h1 { color: #4CAF50 !important; font-weight: 700 !important; }
+h2 { color: #388E3C !important; font-weight: 500 !important; }
 h3 { color: #2E7D32 !important; }
 
 .stButton > button {

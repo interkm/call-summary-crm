@@ -181,7 +181,10 @@ with st.sidebar:
 
     st.divider()
     st.markdown("**텔레그램**")
-    st.success("연결됨 ✓") if tg_ok() else st.warning("미설정")
+    if tg_ok():
+        st.success("연결됨 ✓")
+    else:
+        st.warning("미설정")
 
     st.divider()
     st.markdown("**스케줄 다이제스트**")
@@ -500,7 +503,10 @@ with tab1:
                         grade_line = f"[{st.session_state.grade}급] " if st.session_state.grade else ""
                         msg = tg_consultation_msg(grade_line + fname, st.session_state.summary)
                         ok = tg_send(msg)
-                        st.success("텔레그램 전송 완료!") if ok else st.warning("텔레그램 전송 실패")
+                        if ok:
+                            st.success("텔레그램 전송 완료!")
+                        else:
+                            st.warning("텔레그램 전송 실패")
                     else:
                         st.info("텔레그램 미설정")
 

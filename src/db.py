@@ -219,6 +219,31 @@ def get_all_contacts() -> list:
     return [dict(r) for r in rows]
 
 
+def delete_contact(contact_id: int) -> None:
+    init_db()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute("DELETE FROM contacts WHERE id = ?", (contact_id,))
+        conn.commit()
+
+
+def search_contacts(keyword: str = "") -> list:
+    init_db()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        if keyword:
+            rows = conn.execute(
+                """SELECT * FROM contacts WHERE
+                   name LIKE ? OR company LIKE ? OR phone LIKE ? OR mobile LIKE ? OR email LIKE ?
+                   ORDER BY created_at DESC""",
+                tuple(f"%{keyword}%" for _ in range(5)),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM contacts ORDER BY created_at DESC"
+            ).fetchall()
+    return [dict(r) for r in rows]
+
+
 def get_all_consultations() -> list:
     init_db()
     with sqlite3.connect(DB_PATH) as conn:

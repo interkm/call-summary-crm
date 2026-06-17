@@ -11,6 +11,7 @@ try:
     from src.db import (
         init_db, save_consultation, save_contact,
         get_duplicates, search_consultations, get_all_contacts,
+        delete_contact, search_contacts,
     )
     from src.storage import save_upload, save_transcript, save_summary_md, save_summary_txt
     from src.summarizer import summarize, _get_secret as sum_get_secret
@@ -217,8 +218,8 @@ def _plain(text: str) -> str:
 
 
 # ── TABS ──────────────────────────────────────────────────────────────────────
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "신규 상담", "상담 검색", "견적 체크리스트", "메시지/콘텐츠", "설정"
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    "신규 상담", "상담 검색", "견적 체크리스트", "메시지/콘텐츠", "연락처 관리", "설정"
 ])
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -743,9 +744,113 @@ with tab4:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# TAB 5 — 설정
+# TAB 5 — 연락처 관리
 # ═══════════════════════════════════════════════════════════════════════════════
 with tab5:
+    st.header("연락처 관리")
+
+    # ── 명함 등록 ────────────────────────────────────────────────────────────
+    st.subheader("명함 등록")
+
+    card_file = st.file_uploader(
+        "명함 이미지 업로드 (JPG/PNG)", type=["jpg", "jpeg", "png", "webp"],
+        key="contact_card_upload",
+    )
+
+    if card_file:
+        st.image(card_file, width=320)
+        if st.button("명함 OCR 분석", key="btn_contact_ocr"):
+            with st.spinner("명함 인식 중..."):
+                try:
+                    info = ocr_business_card(card_file.read(), groq_key, card_file.name)
+                    st.session_state["_contact_ocr"] = info
+                    st.success("인식 완료!")
+                except Exception as e:
+                    st.error(f"OCR 실패: {e}")
+                    st.session_state["_contact_ocr"] = {}
+
+    if "_contact_ocr" not in st.session_state:
+        st.session_state["_contact_ocr"] = {}
+
+    ocr = st.session_state["_contact_ocr"]
+
+    with st.form("form_contact_save"):
+        st.markdown("**연락처 정보 확인/수정 후 저장**")
+        c1, c2 = st.columns(2)
+        name     = c1.text_input("성명",     value=ocr.get("name", ""))
+        title    = c2.text_input("직함",     value=ocr.get("title", ""))
+        company  = c1.text_input("회사",     value=ocr.get("company", ""))
+        dept     = c2.text_input("부서",     value=ocr.get("department", ""))
+        phone_c  = c1.text_input("전화",     value=ocr.get("phone", ""))
+        mobile_c = c2.text_input("휴대폰",   value=ocr.get("mobile", ""))
+        email_c  = c1.text_input("이메일",   value=ocr.get("email", ""))
+        addr_c   = c2.text_input("주소",     value=ocr.get("address", ""))
+        web_c    = st.text_input("웹사이트", value=ocr.get("website", ""))
+
+        if st.form_submit_button("연락처 저장"):
+            if not name and not company and not phone_c:
+                st.warning("성명, 회사, 전화 중 하나 이상 입력 필요")
+            else:
+                try:
+                    save_contact({
+                        "name": name, "title": title,
+                        "company": company, "department": dept,
+                        "phone": phone_c, "mobile": mobile_c,
+                        "email": email_c, "address": addr_c,
+                        "website": web_c,
+                    })
+                    st.success(f"{name or company} 저장 완료!")
+                    st.session_state["_contact_ocr"] = {}
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"저장 실패: {e}")
+
+    st.divider()
+
+    # ── 연락처 목록 ──────────────────────────────────────────────────────────
+    st.subheader("연락처 목록")
+
+    kw_contact = st.text_input("검색 (이름/회사/전화/이메일)", key="contact_search")
+
+    try:
+        contacts = search_contacts(kw_contact)
+    except Exception as e:
+        st.error(f"조회 오류: {e}")
+        contacts = []
+
+    st.caption(f"총 {len(contacts)}건")
+
+    for ct in contacts:
+        _cid   = ct.get("id")
+        _name  = ct.get("name", "")  or "(이름없음)"
+        _co    = ct.get("company", "") or ""
+        _title = ct.get("title", "")  or ""
+        _phone = ct.get("phone", "")  or ct.get("mobile", "") or ""
+        _email = ct.get("email", "") or ""
+        _label = f"{_name}  {_co}  {_title}".strip()
+
+        with st.expander(_label, expanded=False):
+            d1, d2, d3 = st.columns([2, 2, 1])
+            d1.markdown(f"**전화** {_phone}")
+            d2.markdown(f"**이메일** {_email}")
+            if ct.get("address"):
+                st.caption(ct["address"])
+            if ct.get("website"):
+                st.caption(ct["website"])
+            st.caption(f"등록일: {ct.get('created_at','')[:10]}")
+            if d3.button("삭제", key=f"del_contact_{_cid}", type="secondary"):
+                try:
+                    delete_contact(_cid)
+                    st.success("삭제됨")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"삭제 실패: {e}")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TAB 6 — 설정
+# ═══════════════════════════════════════════════════════════════════════════════
+with tab6:
     st.header("설정")
 
     st.subheader("저장 경로")

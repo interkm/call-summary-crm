@@ -7,22 +7,28 @@ import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from src.db import (
-    init_db, save_consultation, save_contact,
-    get_duplicates, search_consultations, get_all_contacts,
-)
-from src.storage import save_upload, save_transcript, save_summary_md, save_summary_txt
-from src.summarizer import summarize, _get_secret as sum_get_secret
-from src.prompts import OPENROUTER_MODELS, GROQ_MODELS
-from src.transcriber import transcribe
-from src.calendar_utils import detect_appointment, make_google_calendar_url
-from src.telegram_utils import is_configured as tg_ok, send as tg_send, consultation_msg as tg_consultation_msg
-from src.github_store import increment_today, create_gist, _get_secret as gs_get_secret
-from src.card_ocr import extract_phone_from_filename, ocr_business_card
-from src.crm_extractor import extract_crm_info
-from src.grader import grade_consultation, GRADE_COLOR, GRADE_DESC
-from src.checklist import evaluate_checklist, checklist_score
-from src.action_generator import generate_actions
+try:
+    from src.db import (
+        init_db, save_consultation, save_contact,
+        get_duplicates, search_consultations, get_all_contacts,
+    )
+    from src.storage import save_upload, save_transcript, save_summary_md, save_summary_txt
+    from src.summarizer import summarize, _get_secret as sum_get_secret
+    from src.prompts import OPENROUTER_MODELS, GROQ_MODELS
+    from src.transcriber import transcribe
+    from src.calendar_utils import detect_appointment, make_google_calendar_url
+    from src.telegram_utils import is_configured as tg_ok, send as tg_send, consultation_msg as tg_consultation_msg
+    from src.github_store import increment_today, create_gist, _get_secret as gs_get_secret
+    from src.card_ocr import extract_phone_from_filename, ocr_business_card
+    from src.crm_extractor import extract_crm_info
+    from src.grader import grade_consultation, GRADE_COLOR, GRADE_DESC
+    from src.checklist import evaluate_checklist, checklist_score
+    from src.action_generator import generate_actions
+except Exception as _import_err:
+    import traceback as _tb
+    st.error(f"모듈 로딩 오류: {_import_err}")
+    st.code(_tb.format_exc())
+    st.stop()
 
 # ── Startup ───────────────────────────────────────────────────────────────────
 init_db()
